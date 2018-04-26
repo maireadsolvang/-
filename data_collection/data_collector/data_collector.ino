@@ -12,6 +12,9 @@ MPU9255 imu; //imu object called, appropriately, imu
 SCREEN oled(U8G2_R0, 5, 17,16);
 const int button_pin = 15;
 const int response_timeout = 6000; //ms to wait for response from host
+const int button_pin_2 = 2;
+const int post_response_timeout = 3000;
+int response_timer;
 
 void setup() {
   //Serial.begin(115200); //for debugging if needed.
@@ -46,6 +49,7 @@ void setup() {
   }
   
   pinMode(button_pin,INPUT_PULLUP);
+  pinMode(button_pin_2,INPUT_PULLUP);
 }
 bool pushedBefore = false;
 int data_timer = 0;
@@ -54,6 +58,7 @@ String data = "";
 void loop() {
   
   int reading = digitalRead(button_pin);
+  int reading_2 = digitalRead(button_pin_2);
   if (!reading){
     if (!pushedBefore){
       oled_print("RECORDING");
@@ -71,12 +76,22 @@ void loop() {
     //Serial.println("Time:"+String(millis()-data_timer)+"Acc:"+String(x)+","+String(y)+","+String(z));
     while (millis()-primary_timer<LOOP_SPEED); //wait for primary timer to increment
     primary_timer =millis();
+    response_timer = millis();
   }
   else{
     if (pushedBefore){
-      oled_print("POSTING");
-      do_POST(data);
-      pushedBefore = false; 
+      if(!reading_2 && millis()-response_timer < post_response_timeout){
+        oled_print("POSTING");
+        do_POST(data);
+        pushedBefore = false; 
+      }
+      else if (millis() - response_timer < post_response_timeout){
+        oled_print("Want to post?");
+      }
+      else if (millis()-response_timer > post_response_timeout){
+        pushedBefore = false;
+        oled_print("DID NOT POST");
+      }
     }
   }
   
@@ -107,8 +122,8 @@ void do_POST(String data){
   if (client.connect("iesc-s1.mit.edu", 80)) { //try to connect to class server
     // This will send the request to the server
     // If connected, fire off HTTP GET:
-    int gestureID = 1;
-    String thing = "username=smathew&data="+data+"&gestureID="+String(gestureID);
+    int gestureID = 3;
+    String thing = "username=truchane&data="+data+"&gestureID="+String(gestureID);
     client.println("POST /608dev/sandbox/smathew/final_project/server.py HTTP/1.1");
     client.println("Host: iesc-s1.mit.edu");
     client.println("Content-Type: application/x-www-form-urlencoded");
@@ -143,7 +158,6 @@ void do_POST(String data){
     delay(300);
   }
 }        
-
 
 
 
