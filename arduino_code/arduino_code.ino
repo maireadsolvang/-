@@ -106,7 +106,60 @@ void oled_print(String input){
   oled.sendBuffer();     // update the screen
 }
 
+int action_state = 0;
+#define GAME_RESTING 0
+#define START_GAME 1
+#define GESTURE_RECOGNITION 2
 
+bool previously_pressed = false;
+String user1 = "";
+String user2 = "";
+String data = "";
+int data_timer = 0;
+
+void action_state_machine(){
+  switch (action_state) {
+    case GAME_RESTING:
+      if (get_infrared()){
+        //create new entry in Game DB 1 -- but on server side, make sure no duplicates
+        do_POST(1);
+        action_state++;
+      }
+      break;
+    case START_GAME:
+      int reading = digitalRead(button_pin);
+      if (!reading){ //if button pressed
+        if (!pushedBefore){
+          //oled_print("RECORDING");
+          data_timer = millis();
+          data = "";
+          previously_pressed = true;
+        }
+        record_IMU_data();
+      }
+      else if (reading && previously_pressed){ //if button not pressed and was previously pressed
+        action_state++;
+        previously_pressed = false; //reset
+      }
+      break;
+    case GESTURE_RECOGNITION:
+      do_POST(2);
+      action_state = 1; //back to START_GAME
+      break;
+    
+  }
+}
+
+bool get_infrared(){
+  //do stuff
+  //return true if game started and update user1 and user2
+  //return false otherwise
+  return false;
+}
+
+void database_state_machine(){
+
+}
 
 void setup_imu(){
   if (imu.readByte(MPU9255_ADDRESS, WHO_AM_I_MPU9255) == 0x73){
@@ -117,13 +170,32 @@ void setup_imu(){
   imu.getAres(); //call this so the IMU internally knows its range/resolution
 }
 
-void do_POST(String data){
+void record_IMU_data(){
+  imu.readAccelData(imu.accelCount);
+  x = imu.accelCount[0]*imu.aRes;
+  y = imu.accelCount[1]*imu.aRes;
+  z = imu.accelCount[2]*imu.aRes;
+  data += "Time:"+String(millis()-data_timer)+"Acc:"+String(x)+","+String(y)+","+String(z)+";";
+}
+
+
+void do_POST(int action){
   WiFiClient client; //instantiate a client object
   if (client.connect("iesc-s1.mit.edu", 80)) { //try to connect to class server
     // This will send the request to the server
     // If connected, fire off HTTP GET:
-    int gestureID = 3;
-    String thing = "action=0&username=truchane&data="+data+"&gestureID="+String(gestureID);
+    String thing = "";
+    switch (action) {
+      case 1: //creating new game
+        String thing = "action=1&user1="+user1+"&user2="+user2;
+        break;
+      case 2: //sending gesture data
+        String username = "smathew";
+        String thing = "action=2&username="+username+"&data="+data+";
+        break;
+    }
+    
+    
     client.println("POST /608dev/sandbox/smathew/final_project/server.py HTTP/1.1");
     client.println("Host: iesc-s1.mit.edu");
     client.println("Content-Type: application/x-www-form-urlencoded");
@@ -158,3 +230,6 @@ void do_POST(String data){
     delay(300);
   }
 }        
+
+
+
