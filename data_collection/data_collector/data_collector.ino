@@ -17,15 +17,15 @@ const int post_response_timeout = 3000;
 int response_timer;
 
 void setup() {
-  //Serial.begin(115200); //for debugging if needed.
+  Serial.begin(115200); //for debugging if needed.
   delay(50); //pause to make sure comms get set up
   Wire.begin();
   delay(50); //pause to make sure comms get set up
   setup_imu();
   primary_timer = millis();
   
-  WiFi.begin("MIT GUEST"); //attempt to connect to wifi
-  //WiFi.begin("6s08","iesc6s08"); 
+//  WiFi.begin("MIT GUEST"); //attempt to connect to wifi
+  WiFi.begin("6s08","iesc6s08"); 
   oled.begin();     // initialize the OLED
   oled.clearBuffer();    //clear the screen contents
   oled.setFont(u8g2_font_5x7_tf);  //set font on oled  
@@ -71,6 +71,8 @@ void loop() {
     x = imu.accelCount[0]*imu.aRes;
     y = imu.accelCount[1]*imu.aRes;
     z = imu.accelCount[2]*imu.aRes;
+    Serial.println(String(x));
+    Serial.println("test");
     data += "Time:"+String(millis()-data_timer)+"Acc:"+String(x)+","+String(y)+","+String(z)+";";
     
     //Serial.println("Time:"+String(millis()-data_timer)+"Acc:"+String(x)+","+String(y)+","+String(z));
@@ -122,8 +124,8 @@ void do_POST(String data){
   if (client.connect("iesc-s1.mit.edu", 80)) { //try to connect to class server
     // This will send the request to the server
     // If connected, fire off HTTP GET:
-    int gestureID = 3;
-    String thing = "username=truchane&data="+data+"&gestureID="+String(gestureID);
+    int gestureID = 1;
+    String thing = "username=mairead&data="+data+"&gestureID="+String(gestureID);
     client.println("POST /608dev/sandbox/smathew/final_project/server.py HTTP/1.1");
     client.println("Host: iesc-s1.mit.edu");
     client.println("Content-Type: application/x-www-form-urlencoded");
