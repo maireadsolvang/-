@@ -1,8 +1,11 @@
 #include <mpu9255_esp32.h>
 #include <U8g2lib.h>
+#include <compass.h> #COMPASS FOLDER UPLOADED TO GITHUB
+#include <adp5350.h>
 #include<math.h>
 #include <WiFi.h>
 #define SCREEN U8G2_SH1106_128X64_NONAME_F_4W_HW_SPI
+#include <TinyGPS++.h>
 
 const int LOOP_SPEED = 50; //milliseconds
 int primary_timer = 0;
@@ -50,6 +53,7 @@ void setup() {
   
   pinMode(button_pin,INPUT_PULLUP);
   pinMode(button_pin_2,INPUT_PULLUP);
+
 }
 bool pushedBefore = false;
 int data_timer = 0;
@@ -167,6 +171,11 @@ void setup_imu(){
   }else{
     while(1); //Serial.println("NOT FOUND"); // Loop forever if communication doesn't happen
   }
+  imu.initMPU9255();
+  imu.MPU9255SelfTest(imu.selfTest);
+  imu.calibrateMPU9255(imu.gyroBias, imu.accelBias);
+  imu.initMPU9255();  
+  imu.initAK8963(imu.factoryMagCalibration);
   imu.getAres(); //call this so the IMU internally knows its range/resolution
 }
 
@@ -176,6 +185,22 @@ void record_IMU_data(){
   y = imu.accelCount[1]*imu.aRes;
   z = imu.accelCount[2]*imu.aRes;
   data += "Time:"+String(millis()-data_timer)+"Acc:"+String(x)+","+String(y)+","+String(z)+";";
+}
+
+bool magnetometer(){ //Returns True if magnetometer > threshold and False if not
+  imu.readMagData(imu.magCount);  // Read the x/y/z adc values
+  imu.mx = (float)imu.magCount[0] * imu.mRes * imu.factoryMagCalibration[0] - imu.magBias[0];
+  imu.my = (float)imu.magCount[1] * imu.mRes * imu.factoryMagCalibration[1] - imu.magBias[1];
+  imu.mz = (float)imu.magCount[2] * imu.mRes * imu.factoryMagCalibration[2] - imu.magBias[2];
+  float mag = sqrt(float(imu.mx)*imu.mx + float(imu.my)*imu.my + float(imu.mz) *imu.mz);
+
+  int threshold = 5000;
+  if(mag > threshold){
+    return true;
+  }
+  else{
+    return false;
+  }
 }
 
 
@@ -191,7 +216,7 @@ void do_POST(int action){
         break;
       case 2: //sending gesture data
         String user = "smathew";
-        String thing = "action=2&user="+user+"&data="+data+";
+        String thing = "action=2&user="+user+"&data="+data;
         break;
     }
     
@@ -230,6 +255,3 @@ void do_POST(int action){
     delay(300);
   }
 }        
-
-
-
