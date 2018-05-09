@@ -85,5 +85,45 @@ def request_handler(request):
 
         return str(all)
 
+def health_update(cur_health_1,cur_health_2,action_1,action_2):
+    """
+    Takes in the current healths of both players and the last action each of them made.
+    Returns the updated healths of both players.
+    """
+    #Both None
+    if action_1 == None and action_2 == None:
+        return [cur_health_1,cur_health_2]
+    #One slash and one None
+    if action_1 == 2 and action_2 == None:
+        return [cur_health_1,cur_health_2-1]
+    if action_1 == None and action_2 == 2:
+        return [cur_health_1-1,cur_health_2]
+    #One push and one None
+    if action_1 == 3 and action_2 == None:
+        if cur_health_2 > 1:
+            return [cur_health_1,cur_health_2-2]
+        else:
+            return [cur_health_1,0]
+    if action_1 == None and action_2 == 3:
+        if cur_health_1 > 1:
+            return [cur_health_1-2,cur_health_2]
+        else:
+            return [0,cur_health_2]
+    #Any block
+    if (action_1 == 2 and action_2 == 4) or (action_1 == 4 and action_2 == 2) or (action_1 == 3 and action_2 == 4) or (action_1 == 4 and action_2 == 3):
+        return [cur_health_1,cur_health_2]
+    #one slash and one slash
+    if action_1 == 2 and action_2 == 2:
+        return [cur_health_1,cur_health_2]
+    #one push and one push
+    if action_1 == 3 and action_2 == 3:
+        if cur_health_1 > 1 and cur_health_2 > 1:
+            return [cur_health_1-2,cur_health_2-2]
+        elif cur_health_1 > 1:
+            return [cur_health_1-2,0]
+        elif cur_health_2 > 1:
+            return [0,cur_health_2-2]
+        else:
+            return [0,0]
 
 
