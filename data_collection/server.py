@@ -8,11 +8,28 @@ game_db = '__HOME__/final_project/game_database.db'  # contains game gestures ta
 health_1 = 5
 health_2 = 5
 
+now = datetime.datetime.now()
+ir_receive_threshold = now - datetime.timedelta(
+    seconds=10)  # only gets action 6 (ir send) and starts a new game if within this threshold
+
+
+def dict_factory(cursor, row):
+    """
+    Converts SQL rows to dictionary format.
+    """
+    d = {}
+    for idx, col in enumerate(cursor.description):
+        if col[0] == "timing":  # convert to datetime object
+            d[col[0]] = datetime.datetime.strptime(row[idx], '%Y-%m-%d %H:%M:%S.%f')
+        # elif col[0] in {'checked', 'game_ID', 'action', 'health_1', 'health_2', 'game_state'}: #convert to int
+        #    d[col[0]] = int(row[idx])
+        else:
+            d[col[0]] = row[idx]
+    return d
+
 
 def request_handler(request):
     ########## constants #############
-    now = datetime.datetime.now()
-<<<<<<< HEAD
     ## extracting data from post or get request##
     method = request["method"]
     # player action
@@ -31,7 +48,7 @@ if action == 0:
 c = conn.cursor()
 else:
 conn = sqlite3.connect(game_db)  # connect to that database (will create if it doesn't already exist)
-conn.row_factory = sqlite3.Row
+conn.row_factory = dict_factory
 c = conn.cursor()
 ##################################
 
@@ -47,99 +64,116 @@ try:
         '''CREATE TABLE gestures_table (game_ID integer, player_ID text, action integer, timing timestamp, checked integer);''')
     # GAME TABLE
     c.execute(
-        '''CREATE TABLE game_table (game_ID integer primary key autoincrement, player_1 text, health_1 integer, player_2 text, health_2 integer, game_state text);''')
-## if already created, move to except
+        '''CREATE TABLE game_table (game_ID integer primary key autoincrement, player_1 text, health_1 integer, player_2 text, health_2 integer, game_state int);''')
+    ## if already created, move to except
 except:
-    pass
+    if action == 0:  # CORRELATION
+        ## get data from the body of the code #####
+        data = form["data"]
+        username = form["username"]
+        gestureID = int(form["gestureID"])
 
-if action == 0:  # CORRELATION
-    ## get data from the body of the code #####
-    data = form["data"]
-    username = form["username"]
-    gestureID = int(form["gestureID"])
+    else:
+        ################# GET REQUEST ##############
+        if action == 1:
+            return "ERROR: this should be a get request!"
+        ##############    Actions ##################
+        elif action in {2, 3, 4}:  ## SLASH(2), PUSH(3) , BLOCK(4)
+            ### updates gestures Table with new values ###
+            add_action(game_ID, player_ID, action)
 
-else:
-    ################# GET REQUEST ##############
-    if action == 1:
-        return "ERROR: this should be a get request!"
-    ##############    Actions ##################
-    elif action in {2, 3, 4}:  ## SLASH(2), PUSH(3) , BLOCK(4)
-        ### updates gestures Table with new values ###
-        add_action(game_ID, player_ID, action, now, 0)
+            ### get game information using game_ID ###
+            game_info_dict = extract_game_info(game_ID)  # dictionary mapping item from game table
 
-        ### get game information using game_ID ###
-        game_info_dict = extract_game_info(game_ID)
-        #         EXTRACTING INFO  #
+            ######### EXTRACTING INFO ##################
+            game_state = game_info_dict["game_state"]
+            player_1 = game_info_dict["player_1"]
+            health_1 = game_info_dict["health_1"]
+            player_2 = game_info_dict["player_2"]
+            health_2 = game_info_dict["health_2"]
 
-        game_state = game_info_dict["state"]  # dictionary mapping item from game table
-        player_1 = game_info_dict["player_1"]
-        health_1 = game_info_dict["health_1"]
-        player_2 = game_info_dict["player_2"]
-        health_2 = game_info_dict["health_2"]
-        #####            end extraction               ####
+            if game_state != 1:
+                if player_ID == player_1:
+                    return str(health_1) + "," + str(game_state) + "," + str(game_ID)
+                elif player_ID == player_2:
+                    return str(health_2) + "," + str(game_state) + "," + str(game_ID)
+            ############# END EXTRACTION #################
 
-        ## extract relevant gestures from gestures table
-        player_gestures = extract_player_gestures(player_1,
-                                                  player_2)  ### creates a dictionary mapping player id to gesture
-        action_1 = player_gestures[player_1]
-        action_2 = player_gestures[player_2]
+            ## extract relevant gestures from gestures table
+            player_gestures = extract_player_gestures(player_1,
+                                                      player_2)  ### creates a dictionary mapping player id to gesture
+            action_1 = player_gestures[player_1]
+            action_2 = player_gestures[player_2]
 
-        ## calculate score
-        Score = health_update(health_1, health_2, action_1, action_2)
-        health_1 = Score[0]
-        health_2 = Score[1]
+            ## calculate score
+            score = health_update(health_1, health_2, action_1, action_2)
+            health_1 = score[0]
+            health_2 = score[1]
 
-        ## change state = 2 (completed) when health of one person goes below 0
-        if health_1 <= 0 or health_2 <= 0:
-            game_state = 2
+            ## change state = 2 (completed) when health of one person goes below 0
+            if health_1 <= 0 or health_2 <= 0:
+                game_state = 2
 
-        ## update the game table
-        update_game_info(game_ID, player_1, health_1, player_2, health_2, game_state)
+            ## update the game table
+            update_game_info(game_ID, player_1, health_1, player_2, health_2, game_state)
 
-        if player_ID == player_1:
-            return "health_1,game_state,
+            if player_ID == player_1:
+                return str(health_1) + "," + str(game_state) + "," + str(game_ID)
+            elif player_ID == player_2:
+                return str(health_2) + "," + str(game_state) + "," + str(game_ID)
 
-        elif player_ID == player_2:
+            return "ERROR: Murd shut up: this never reaches the server"
+        elif action == 6:  # IR_SEND
+            ##SHANA DONE##
+            add_action(game_ID=-1, player_ID, action)
 
-    """elif action == 2 : #SLASH
-    elif action == 3: #PUSH
-    elif action == 4: #BLOCK
-    elif action == 5: #CHARGE"""
+        elif action == 7:  # IR_RECEIVE
+            ##SHANA DONE##
+            c.execute(
+                '''SELECT player_ID FROM gestures_table WHERE (checked = 0 AND action = 6 AND player_ID != ? AND timing > ?);''',
+                (player_ID, ir_receive_threshold))
+            results = c.fetchone()
+            if results is None:
+                add_action(game_ID=-1, player_ID, action)
+            else:
+                add_action(game_ID=-1, player_ID, action, checked=1)
+                player_2 = results["player_ID"]
+            c.execute('''INSERT into game_table VALUES (null,?,?,?,?,?);''', (player_ID, 5, player_2, 5, 1))
 
-    return "ERROR: Murd shut up: this never reaches the server"
-elif action == 6:  # IR_SEND
-# FRANKLIN
-elif action == 7:  # IR_RECEIVE
-# FRANKLIN
 
-send
-stuff
-to
-2
-elif method = "GET":
-## SHANA ##
+            # send stuff to 2
+        elif method = "GET":
+    ## SHANA DONE ##
+c.execute('''SELECT * FROM game_table WHERE (player_ID = ? AND game_state = 1);''', (player_ID,))
+results = c.fetchone()
+if results is None:
+    return "-1,0,-1"
+return str(results[health_1]) + "," + str(results[game_state]) + "," + str(results[game_ID])
 
-def add_action(game_ID, player_ID, action_ID, time=now, check=0):
-    # Franklin
+
+def add_action(game_ID, player_ID, action_ID, time=now, checked=0):
+    # Franklin DONE
     """
     Function that updates the table: gestures table with the corresponding inputs and
     AKA add gestures to the gesture table
       returns nothing.
     """
-    pass
+    c.execute('''INSERT into gestures_table VALUES (?,?,?,?,?)''', (game_ID, player_ID, action_ID, time, checked))
 
 
-def update_game_info(game_ID, player_1, health_1, player_2, health_2, state):
-    # Franklin
+def update_game_info(game_ID, player_1, health_1, player_2, health_2, game_state):
+    # Franklin DONE
     """
     Goes into the game table and will UPDATE (not make a new row) that row with these values.
     Returns game state.
     """
-    pass
+    c.execute('''UPDATE game_table SET health_1 = ?, health_2 = ?, game_state = ? WHERE game_ID = ?;''',
+              (health_1, health_2, game_state, game_ID))
+    return state
 
 
 def extract_game_info(game_ID):
-    # DONE #
+    # SHANA DONE #
     """
     Takes in the game_ID and goes into the Game Table. 
     Returns the most recent row containing the game_ID 
@@ -151,7 +185,7 @@ def extract_game_info(game_ID):
 
 
 def extract_player_gestures(player_1, player_2):
-    # BOOF NOT DONE
+    # BOOF DONE
     """
     Looks at gesture database and finds the two most recent rows
     where one is player_1 and one is player_2. The timestamp of the rows
@@ -160,26 +194,55 @@ def extract_player_gestures(player_1, player_2):
     value in that database row to 1. If they're not, one of the players 
     is None. Returns a dictionary of the player name and their action. 
     """
-    recent_player_1 = c.execute('''SELECT * FROM gesture_table WHERE player_ID = player_1 ORDER BY timing ASC;''')
-    time_delta_1 = recent_player_1['timing'] - datetime.timedelta(seconds=1)
+    recent_player_1 = c.execute(
+        '''SELECT * FROM gesture_table WHERE player_ID = player_1 ORDER BY timing DESC;''').fetchone()
+    recent_player_2 = c.execute(
+        '''SELECT * FROM gesture_table WHERE player_ID = player_2 ORDER BY timing DESC;''').fetchone()
 
 
-time_delta_2 = recent_player_2['timing'] + datetime.timedelta(seconds=1)
-try:
-    recent_player_2 = c.execute('''SELECT * FROM gesture_table WHERE player_ID = player_2 ORDER BY timing ASC;''')
+time_dif = recent_player_1['timing'] - recent_player_2['timing'].total_seconds()
+# times are greater than 1 sec apart and recent_player_1 was first
+if time_dif < -1:
+    recent_player_2 = None
+# times are greater than 1 sec apart and recent_player_2 was first
+elif time_dif > 1:
+    recent_player_1 = None
+
+if recent_player_1['checked'] != 0:
+    recent_player_1 = None
+if recent_player_2['checked'] != 0:
+    recent_player_2 = None
+
+    # If row has an action that is not block, change the check value to 1
+    if recent_player_1 != None and recent_player_1['action'] != 4:
+c.execute('''UPDATE gestures_table SET checked = 1 WHERE player_ID = player_1 ORDER BY timing DESC LIMIT 1;''')
+if recent_player_1 != None and recent_player_1['action'] != 4:
+    c.execute('''UPDATE gestures_table SET checked = 1 WHERE player_ID = player_2 ORDER BY timing DESC LIMIT 1;''')
+
+# Return dictionary of player name and their action
+if player_1 == None and player_2 == None:
+    return {recent_player_1['player_ID']: None, recent_player_2['player_ID']: None}
+elif player_1 == None:
+    return {recent_player_1['player_ID']: None, recent_player_2['player_ID']: recent_player_2['action']}
+elif player_2 == None:
+    return {recent_player_1['player_ID']: recent_player_1['action'], recent_player_2['player_ID']: None}
+    else:
+    {recent_player_1['player_ID']: recent_player_1['action'], recent_player_2['player_ID']: recent_player_2['action']}
 
 
 def check_game_start():
-    # DONE#
+    # SHANA DONE#
     """
     Looks at gesture database and finds the last time itself sent action 6.
     Checks everything after that row and sees if it finds action 7. If it 
     finds it, returns True. Otherwise, returns False. 
     """
     last_6_time = c.execute(
-        '''SELECT timing FROM game_table WHERE (action = 6 AND checked = 0) ORDER BY timing ASC LIMIT 1;''').fetchone()
+        '''SELECT timing FROM game_table WHERE (action = 6 AND checked = 0) ORDER BY timing DESC LIMIT 1;''').fetchone()[
+        'timing']
     last_7_time = c.execute(
-        '''SELECT timing FROM game_table WHERE (action = 7 AND checked = 0) ORDER BY timing ASC LIMIT 1;''').fetchone()
+        '''SELECT timing FROM game_table WHERE (action = 7 AND checked = 0) ORDER BY timing DESC LIMIT 1;''').fetchone()[
+        'timing']
     return last_6_time < last_7_time
 
 
@@ -189,7 +252,7 @@ def start_game():
     Goes into game table and finds the last entry. Returns a list of that game_ID 
       and the other player's name.
     """
-    last_entry = c.execute('''SELECT * FROM game_table ORDER BY timing ASC;''').fetchone()
+    last_entry = c.execute('''SELECT * FROM game_table ORDER BY timing DESC;''').fetchone()
     game_ID = last_entry['game_ID']
     if last_entry['player_1'] == player_ID:
         other_player = last_entry['player_2']
@@ -199,113 +262,43 @@ def start_game():
 
 
 def health_update(cur_health_1, cur_health_2, action_1, action_2):
-=======
-    if request["method"] == "POST": #puts encrypted response in database
-        form = request["form"]
-        try:
-            action = int(form["action"])
-            if action == 0:
-                data = form["data"]
-                username = form["username"]
-                gestureID = int(form["gestureID"])
-
-                conn = sqlite3.connect(db)  # connect to that database (will create if it doesn't already exist)
-                c = conn.cursor()  # make cursor into database (allows us to execute commands)
-            elif action == 1:
-                user1 = form["user1"]
-                user2 = form["user2"]
-
-                conn = sqlite3.connect(game_db)  # connect to that database (will create if it doesn't already exist)
-                c = conn.cursor()  # make cursor into database (allows us to execute commands)
-            elif action == 2:
-                user = form["user"]
-                data = form["data"]
-
-                conn = sqlite3.connect(game_db)  # connect to that database (will create if it doesn't already exist)
-                c = conn.cursor()  # make cursor into database (allows us to execute commands)
-
-        except Exception:
-            return "-1"
-
-        try:
-            if action == 0:
-                c.execute('''CREATE TABLE raw_data_table (username text, timing timestamp, gestureID real, raw_data text);''')  # run a CREATE TABLE command
-            elif action == 1:
-                c.execute('''CREATE TABLE game_stats_table (gameID integer primary key autoincrement, user1 text, user2 text, user1Score integer, user2Score integer, game_status text, start_time timestamp);''')  # run a CREATE TABLE command
-            elif action == 2:
-                c.execute('''CREATE TABLE game_gestures_table (gameID integer primary key, user, gestureID real, time timestamp);''')  # run a CREATE TABLE command
-        except:
-            pass
-
-        if action == 0:
-            c.execute('''INSERT into raw_data_table VALUES (?,?,?,?);''', (username, now, gestureID, data))
-        elif action == 1:
-            c.execute('''INSERT into game_stats_table VALUES (?,?,?,?,?,?);''', (user1, user2, 0, 0, 'ongoing', now))
-        elif action == 2:
-            gestureID = analyze_gesture(data)
-            gameID = c.execute('''SELECT gameID FROM game_stats_table WHERE game_status = 'ongoing' AND (user1 = ? OR user2 = ?);''', (user,)).fetchone()[0] #check if returns right data type
-            c.execute('''INSERT into game_gestures_table VALUES (?,?,?,?);''', (gameID, user, gestureID, now))
-        conn.commit()  # commit commands
-        conn.close()  # close connection to database
-        return data
-
-    elif request['method'] == 'GET': #is a GET request
-
-        args = request["args"]
-        if 'table' not in args:
-            return '-1'
-
-        try:
-            table = int(request["values"]['table'])
-
-        except Exception:
-            return '-1'
-
-        all = []
-        #twenty_seconds_ago = timestamp - datetime.timedelta(seconds=20)  # create time for 20 seconds ago!
-        things = c.execute('''SELECT * FROM ?;''', (table,)).fetchall()
-        for x in things:
-            all.append(x[0])
-
-        return str(all)
-
-def health_update(cur_health_1,cur_health_2,action_1,action_2):
     """
     Takes in the current healths of both players and the last action each of them made.
     Returns the updated healths of both players.
     """
-    #Both None
+    # Both None
     if action_1 == None and action_2 == None:
-        return [cur_health_1,cur_health_2]
-    #One slash and one None
+        return [cur_health_1, cur_health_2]
+    # One slash and one None
     if action_1 == 2 and action_2 == None:
-        return [cur_health_1,cur_health_2-1]
+        return [cur_health_1, cur_health_2 - 1]
     if action_1 == None and action_2 == 2:
-        return [cur_health_1-1,cur_health_2]
-    #One push and one None
+        return [cur_health_1 - 1, cur_health_2]
+    # One push and one None
     if action_1 == 3 and action_2 == None:
         if cur_health_2 > 1:
-            return [cur_health_1,cur_health_2-2]
+            return [cur_health_1, cur_health_2 - 2]
         else:
-            return [cur_health_1,0]
+            return [cur_health_1, 0]
     if action_1 == None and action_2 == 3:
         if cur_health_1 > 1:
-            return [cur_health_1-2,cur_health_2]
+            return [cur_health_1 - 2, cur_health_2]
         else:
-            return [0,cur_health_2]
-    #Any block
-    if (action_1 == 2 and action_2 == 4) or (action_1 == 4 and action_2 == 2) or (action_1 == 3 and action_2 == 4) or (action_1 == 4 and action_2 == 3) or (action_1 == 4 and action_2 == 4):
-        return [cur_health_1,cur_health_2]
-    #one slash and one slash
+            return [0, cur_health_2]
+    # Any block
+    if (action_1 == 2 and action_2 == 4) or (action_1 == 4 and action_2 == 2) or (action_1 == 3 and action_2 == 4) or (
+            action_1 == 4 and action_2 == 3) or (action_1 == 4 and action_2 == 4):
+        return [cur_health_1, cur_health_2]
+    # one slash and one slash
     if action_1 == 2 and action_2 == 2:
-        return [cur_health_1-1,cur_health_2-1]
-    #one push and one push
+        return [cur_health_1 - 1, cur_health_2 - 1]
+    # one push and one push
     if action_1 == 3 and action_2 == 3:
         if cur_health_1 > 1 and cur_health_2 > 1:
-            return [cur_health_1-2,cur_health_2-2]
+            return [cur_health_1 - 2, cur_health_2 - 2]
         elif cur_health_1 > 1:
-            return [cur_health_1-2,0]
+            return [cur_health_1 - 2, 0]
         elif cur_health_2 > 1:
-            return [0,cur_health_2-2]
+            return [0, cur_health_2 - 2]
         else:
-            return [0,0]
+            return [0, 0]
