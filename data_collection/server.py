@@ -129,7 +129,8 @@ def request_handler(request):
           	add_action(game_ID=-1,player_ID,action,checked=1)
           	player_1=results["player_ID"]
             c.execute('''INSERT into game_table VALUES (null,?,?,?,?,?);''',(player_1,5,player_ID,5,1)) #create new game
-            return str(5) + "," + str(game_state) + "," + str(game_ID)
+            game_ID c.execute('''SELECT game_ID FROM game_table WHERE (player_1 = ? AND game_state = 1);''', (player_ID,))
+            return str(5) + "," + str(1) + "," + str(game_ID)
           
 
       #send stuff to 2
@@ -181,8 +182,8 @@ def extract_player_gestures(player_1,player_2):
   value in that database row to 1. If they're not, one of the players 
   is None. Returns a dictionary of the player name and their action. 
   """
-  recent_player_1 = c.execute('''SELECT * FROM gesture_table WHERE player_ID = player_1 ORDER BY timing DESC;''').fetchone()
-	recent_player_2 = c.execute('''SELECT * FROM gesture_table WHERE player_ID = player_2 ORDER BY timing DESC;''').fetchone()
+  recent_player_1 = c.execute('''SELECT * FROM gesture_table WHERE player_ID = ? ORDER BY timing DESC;''',(player_1)).fetchone()
+	recent_player_2 = c.execute('''SELECT * FROM gesture_table WHERE player_ID = ? ORDER BY timing DESC;''',(player_2)).fetchone()
   
   time_dif = recent_player_1['timing'] - recent_player_2['timing'].total_seconds()
   #times are greater than 1 sec apart and recent_player_1 was first
@@ -199,9 +200,9 @@ def extract_player_gestures(player_1,player_2):
   
   #If row has an action that is not block, change the check value to 1
 	if recent_player_1 != None and recent_player_1['action'] != 4:
-    c.execute('''UPDATE gestures_table SET checked = 1 WHERE player_ID = player_1 ORDER BY timing DESC LIMIT 1;''')
+    c.execute('''UPDATE gestures_table SET checked = 1 WHERE player_ID = ? ORDER BY timing DESC LIMIT 1;''',(player_1))
   if recent_player_1 != None and recent_player_1['action'] != 4:
-    c.execute('''UPDATE gestures_table SET checked = 1 WHERE player_ID = player_2 ORDER BY timing DESC LIMIT 1;''')
+    c.execute('''UPDATE gestures_table SET checked = 1 WHERE player_ID = ? ORDER BY timing DESC LIMIT 1;''',(player_2))
   
   #Return dictionary of player name and their action
   if player_1 == None and player_2 == None:
