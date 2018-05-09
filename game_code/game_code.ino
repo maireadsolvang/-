@@ -1,9 +1,11 @@
 #include <mpu9255_esp32.h>
 #include <U8g2lib.h>
-#include <compass.h> #COMPASS FOLDER UPLOADED TO GITHUB
+#include <compass.h> //COMPASS FOLDER UPLOADED TO GITHUB
 #include <adp5350.h>
 #include<math.h>
 #include <WiFi.h>
+#include <SPI.h>
+#include "esp32-hal-ledc.h" //MUST BE PUT IN GAME_CODE FOLDER
 #define SCREEN U8G2_SH1106_128X64_NONAME_F_4W_HW_SPI
 #include <TinyGPS++.h>
 
@@ -18,6 +20,15 @@ const int response_timeout = 6000; //ms to wait for response from host
 const int button_pin_2 = 2;
 const int post_response_timeout = 3000;
 int response_timer;
+
+/////IR//////
+int emitter_pin = 19; //19 //35
+int receiver_pin = 34; 
+int freq = 38000;
+int ledChannel = 0;
+int resolution = 8;
+/////END IR////
+
 
 void setup() {
   //Serial.begin(115200); //for debugging if needed.
@@ -98,7 +109,11 @@ void loop() {
       }
     }
   }
-  
+
+  ////IR//////
+  ledcSetup(ledChannel, freq, resolution);
+  ledcAttachPin(emitter_pin, ledChannel);
+  ////END IR///
 
 }
 
@@ -124,7 +139,7 @@ int data_timer = 0;
 void action_state_machine(){
   switch (action_state) {
     case GAME_RESTING:
-      if (get_infrared()){
+      if (infrared_receiving()){
         //create new entry in Game DB 1 -- but on server side, make sure no duplicates
         do_POST(1);
         action_state++;
@@ -154,11 +169,23 @@ void action_state_machine(){
   }
 }
 
-bool get_infrared(){
+bool infrared_receiving(){
   //do stuff
   //return true if game started and update user1 and user2
   //return false otherwise
-  return false;
+  int receiving = !digitalRead(receiver_pin);
+  if(receiving){
+    return true;
+  }
+  else{
+    return false;
+  }
+}
+
+void infrared_sending(){
+  //SENDS INFRARED SIGNAL TO OTHER PLAYER when button is pressed
+  ledcWrite(ledChannel,250);
+  //Make sure to do ledcWrite(ledChannel,0) after calling this function to turn it back off
 }
 
 void database_state_machine(){
