@@ -36,11 +36,12 @@ def request_handler(request):
     ## extracting data from post or get request##
     method = request["method"]
     # player action
-    action = int(request["action"])
+    action = int(request["values"]["action"])
     # player ID
-    player_ID = str(request["player_ID"])
+    player_ID = str(request["values"]["player_ID"])
     # game ID
-    game_ID = int(request["game_ID"])
+    game_ID = int(request["values"]["game_ID"])
+    return request
     ###################################
 
     ############## CONNECTING TO THE RIGHT DB ####################
