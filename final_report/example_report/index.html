@@ -131,7 +131,7 @@ Both these requests return `"-1,0,-1"` if the database table query returns no ma
 * `Arduino.h`: Main arduino header file.
 * `Adafruit_NeoPixel.h`: LED control.
 
-####Setup
+####Setup()
 
 * Serial setup for debugging while plugged into laptop.
 
@@ -155,8 +155,26 @@ Both these requests return `"-1,0,-1"` if the database table query returns no ma
 
 * Power variable intially set to true to indicate that the ESP should be on (as opposed to sleeping with little use). 
 
-####Loop/State Machine
+####Loop()
 
+#####Awake vs Asleep
+* There are two parts to the loop. If the global variable is true, the code loops through a separate function called loop_on(), which is our state machine and all other integrated code functions. The other part is sleep mode. When the IMU has little movement for more than power_threshold time (currently sent to 60 seconds), the ESP will go into light sleep, and the LEDs will turn off. The ESP will get out of this and go back into the loop_on() part when the button on the board is pressed.
+
+#####Switch State Machine
+
+There are four switch states that control the entire game.
+
+* Case `GAME_RESTING`: In this state, the board is waiting for a game to begin. In case it is reentering this state after just finishing a game, it resets the global game variables game_ID, health, data_timer, and game_state. If the button is pressed, it does `do_POST(7)` (see helper function documentation for this) and causes the next loop to go to `WAITING_TO_START`.
+* Case `WAITING_TO_START`: In this state, the player is trying to start a game with the other person. To know if the other person has also pressed the button to try to start a game, it continuously does `do_GET(1)` (see helper function documentation) until the button is no longer pressed, in which case it returns to `GAME_RESTING` because the player has given up on trying to start a game, or if the global variable `game_state` has been changed to 1, which means in game, it will go to `IN_GAME`. This variable is changed by the server information coming back from the constant GET request. If the other player has also posted that they are trying to start a game, and if both of them get the game_state as 1 infromation back form the server, that is when they both go into `IN_GAME`.
+* Case `IN_GAME`: There are several things that happen while both players are in game. First, it is checked if the variable `get_timer` has reached the `get_thres`. If it has, it does `do_GET(8)`, which checks the progress of the game from the server in terms of their own health, the state of the game, and the game id. This is useful when the other person has attacked but this player has not done a move in a while. Without this GET request, the player would never know they have lost points until they make a move themselves. 
+
+  Next, `gesture_stuff()` (see helper function documentation) is called, which updates the global variable current_action. This variable is what move the player is currently making. This can be 'Slash', 'Push', 'Block', or None. Depending on what move the person has made, it goes into a certain if statement. Before this, though, `has_happened(current_action)` checks whether `current_action` has just been posted or if this is a new move. Without this check, one slash move would post a slash to the server multiple times. However, blocking moves do post to the server continuously, since the server has to know if a player is currently blocking while a counter-move is made. 
+
+  Depending on the move, the MP3 player will player the song associated with the gesture. Then, a post request will be made with the appropriate gesture number sent to the server (2 for slash, 3 for push, 4 for block). `get_timer` is also reset since the global game variables were just updated (and the ESP doesn't need to check again as soon to find out the status of the game). 
+
+  Finally, if the global variable `game_state` has been changed to 2 from the information coming back from the server, it checks whether you have won or lost. A `game_state` value of 2 means that the game is over. If the player's health is 0 when this happens, it means the player has lost. It then plays the loser music out of the speakers and moves back into `GAME_RESTING` to play another game. If the player's health is greater that 0, the player must have won since the game is over, so it plays the winner music and moves back into `GAME_RESTING`.
+
+* Case `GESTURE_RECOGNITION`: This is in place in case we want to collect more gestures for the correlation data. More gesture collection from more people will make the correlations and therefore the gesture recognition better. 
 
 
 ####Helper Functions
