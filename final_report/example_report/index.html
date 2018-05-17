@@ -40,7 +40,7 @@ Your browser does not support the video tag.
 Functional block diagram of the system:
 
 <center>
-	<img src="./media/schematic_1.png" width="600"/>
+	<img src="./media/systemblockdiagram.jpg" width="600"/>
 </center>
 
 Insert description here.
@@ -67,18 +67,23 @@ server.py takes care of all the server-side code, which involves handling GET an
 
 Depending on the value of `action`, which indicates the action that the user just performed in the game, the code will process this accordingly.
 
-If the request was a POST request and the value of `action` was:
+If the request is a POST request and the value of `action` is:
 
 * 2, 3, or 4, the action was a slash, push, or block, respectively.<br/><br/>
-The section of the code handling these cases will call the helper function `add_action(game_ID, player_ID, action)`, which updates `gestures_table` with this new action.(Helper functions are described in more detail later.)<br/><br/>
+The section of the code handling these cases will call the helper function `add_action(game_ID, player_ID, action)`, which updates `gestures_table` with this new action. (Helper functions are described in more detail later.)<br/><br/>
 The data from the `game_table` corresponding to the current game is then extracted using the helper function `extract_game_info(game_ID)`.<br/><br/>
 If this game is not ongoing (its `game_state` is not `1`), the health of the player who made the POST request, `game_state`, and `game_ID` is returned as a string.<br/><br/>
-Otherwise if the game is ongoing, the last gesture from each player that hasn't been taken into account yet is extracted from the database via the helper function `extract_player_gestures(player_1, player_2)`. Based on these gestures, the helper function `health_update(health_1, health_2, action_1, action_2)` returns the updated healths of the two players and `update_game_info(game_ID, health_1, health_2, game_state)` updates the healths and game state in `game_table`.
+Otherwise if the game is ongoing, the last gesture from each player that hasn't been taken into account yet is extracted from the database via the helper function `extract_player_gestures(player_1, player_2)`. Based on these gestures, the helper function `health_update(health_1, health_2, action_1, action_2)` returns the updated healths of the two players and `update_game_info(game_ID, health_1, health_2, game_state)` updates the healths and game state in `game_table`.<br/><br/>
+The health of the player who made the POST request, `game_state`, and `game_ID` is then returned as a string.<br/><br/>
 
-* Explore the websockets capabilities of the ESP32 more
-* Work within the Intel/Altera toolchain more
+* 7, the action was a button press, meaning that a player is trying to start a game.<br/><br/>
+This section of the code checks `gestures_table` to see if another player has also tried starting a game in the last 3 seconds (and if they haven't already been matched with someone). It gets the most recent entry matching these specifications, creates a new game with both of these players in `game_table`, and marks both of the corresponding entries in the `gestures_table` as matched (`checked=1`).<br/><br/>
+If there are no entries, it returns `"-1,0,-1"`.<br/><br/>
 
-POST requests are 
+
+If the request is a POST request and the value of `action` is:
+
+* 
 
 On on produce colonel pointed. Just four sold need over how any. In to september suspicion determine he prevailed admitting. On adapted an as affixed limited on. Giving cousin warmly things no spring mr be abroad. Relation breeding be as repeated strictly followed margaret. One gravity son brought shyness waiting regular led ham. 
 
