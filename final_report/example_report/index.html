@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <html>
-<title>Example: The Example Final Project</title>
+<title>Sakana Milk Battles: The Game</title>
 
 <xmp theme="united" style="display:none;">
 # Overview
@@ -35,6 +35,13 @@ Your browser does not support the video tag.
 </video>
 </center>
 
+<center>
+	<iframe src="https://giphy.com/embed/g0vZLllSiQielcNPae" width="480" height="270" frameBorder="0" allowFullScreen></iframe>
+</center>
+
+
+
+
 ## System Design
 
 Functional block diagram of the system:
@@ -63,9 +70,13 @@ Lists are great. This summer I'm going to:
 
 The code is primarily on two files: server.py and esp32.ino.
 
+###Server-side code
+
 server.py takes care of all the server-side code, which involves handling GET and POST requests from the ESP32. When these two types of requests are made, the function `request_handler(request)` is called. All GET and POST requests pass in values for `action`, `player_ID`, and `game_ID` as query arguments.
 
 Depending on the value of `action`, which indicates the action that the user just performed in the game, the code will process this accordingly.
+
+####POST Requests
 
 If the request is a POST request and the value of `action` is:
 
@@ -77,19 +88,35 @@ Otherwise if the game is ongoing, the last gesture from each player that hasn't 
 The health of the player who made the POST request, `game_state`, and `game_ID` is then returned as a string.<br/><br/>
 
 * 7, the action was a button press, meaning that a player is trying to start a game.<br/><br/>
-This section of the code checks `gestures_table` to see if another player has also tried starting a game in the last 3 seconds (and if they haven't already been matched with someone). It gets the most recent entry matching these specifications, creates a new game with both of these players in `game_table`, and marks both of the corresponding entries in the `gestures_table` as matched (`checked=1`).<br/><br/>
+This section of the code checks `gestures_table` to see if another player has also tried starting a game in the last 3 seconds (and if they haven't already been matched with someone). It gets the most recent entry matching these specifications, creates a new game with both of these players in `game_table`, and marks both of the corresponding entries in the `gestures_table` as matched (`checked=1`). The player who first pressed the button to start the game is `player_1` and the other `player_2`.<br/><br/>
 If there are no entries, it returns `"-1,0,-1"`.<br/><br/>
 
+####GET Requests
 
-If the request is a POST request and the value of `action` is:
+If the request is a GET request and the value of `action` is:
 
-* 
+* 1, the code checks the `game_table` for the most recent entry of an ongoing game where `player_1` matches the `player_ID` passed as an argument. (The player who first pressed the button to start the game never received the game information during their POST request with `action=7`, so they must post GET requests to get this information.) It returns the health of `player_1`, `game_state`, and `game_ID` as a string.
 
-On on produce colonel pointed. Just four sold need over how any. In to september suspicion determine he prevailed admitting. On adapted an as affixed limited on. Giving cousin warmly things no spring mr be abroad. Relation breeding be as repeated strictly followed margaret. One gravity son brought shyness waiting regular led ham. 
+* 8, the code calls the helper function `extract_game_info(game_ID)` and returns the health of the player who made the POST request, `game_state`, and `game_ID` as a string.
 
-Now residence dashwoods she excellent you. Shade being under his bed her. Much read on as draw. Blessing for ignorant exercise any yourself unpacked. Pleasant horrible but confined day end marriage. Eagerness furniture set preserved far recommend. Did even but nor are most gave hope. Secure active living depend son repair day ladies now. 
+Both these requests return `"-1,0,-1"` if the database table query returns no matching entries.
 
-He moonlight difficult engrossed an it sportsmen. Interested has all devonshire difficulty gay assistance joy. Unaffected at ye of compliment alteration to. Place voice no arise along to. Parlors waiting so against me no. Wishing calling are warrant settled was luckily. Express besides it present if at an opinion visitor. 
+####Helper Functions
+
+* `dict_factory(cursor, row)`: Converts SQL rows to dictionary format. This is used to set the `conn = sqlite3.connect(game_db)` setting so that all queries to the database return a dictionary. Modified from [here](https://stackoverflow.com/a/3300514).
+
+* `add_action(game_ID,player_ID,action_ID,time=now,checked=0)`: Adds an entry to `gestures_table` with the corresponding inputs and returns nothing.
+
+* `update_game_info(game_ID, health_1, health_2, game_state)`:    Goes into `game_table` updates the row with this `game_ID` with these values. Returns game state.
+
+* `extract_game_info(game_ID)`: Takes in the `game_ID` and goes into `game_table`. Returns the most recent row containing the game_ID as a dictionary of the game information. 
+
+* `extract_player_gestures(player_1, player_2)`: Looks at gesture database and finds the two most recent rows where one is `player_1` and one is `player_2`. The timestamp of the rows must be within one second and `checked` for both must equal `0`. If one of the two rows has an action that is not block, change the `checked` value in that database row to `1`. If they're not, one of the players is `None`. Returns a dictionary of the player name and their action. 
+
+* `health_update(cur_health_1, cur_health_2, action_1, action_2)`: Takes in the current healths of both players and the last action each of them made. Returns the updated healths of both players as a list.
+
+
+###ESP32 code
 
 Here's some code:
 
@@ -110,17 +137,7 @@ void drawGrid(void) {
 }
 ```
 
-﻿no purse as fully me or point. Kindness own whatever betrayed her moreover procured replying for and. Proposal indulged no do do sociable he throwing settling. Covered ten nor comfort offices carried. Age she way earnestly the fulfilled extremely. Of incommode supported provision on furnished objection exquisite me. Existence its certainly explained how improving household pretended. Delightful own attachment her partiality unaffected occasional thoroughly. Adieus it no wonder spirit houses. 
-
-Moments its musical age explain. But extremity now education concluded earnestly her continual. Oh furniture acuteness suspected continual ye something frankness. Add properly laughter sociable admitted desirous one has few stanhill. Opinion regular in perhaps another enjoyed no engaged he at. It conveying he continual ye suspected as necessary. Separate met packages shy for kindness. 
-
-Be me shall purse my ought times. Joy years doors all would again rooms these. Solicitude announcing as to sufficient my. No my reached suppose proceed pressed perhaps he. Eagerness it delighted pronounce repulsive furniture no. Excuse few the remain highly feebly add people manner say. It high at my mind by roof. No wonder worthy in dinner. 
-
-Merry alone do it burst me songs. Sorry equal charm joy her those folly ham. In they no is many both. Recommend new contented intention improving bed performed age. Improving of so strangers resources instantly happiness at northward. Danger nearer length oppose really add now either. But ask regret eats branch fat garden. Become am he except wishes. Past so at door we walk want such sang. Feeling colonel get her garrets own. 
-
-Do so written as raising parlors spirits mr elderly. Made late in of high left hold. Carried females of up highest calling. Limits marked led silent dining her she far. Sir but elegance marriage dwelling likewise position old pleasure men. Dissimilar themselves simplicity no of contrasted as. Delay great day hours men. Stuff front to do allow to asked he. 
-
-Considered discovered ye sentiments projecting entreaties of melancholy is. In expression an solicitude principles in do. Hard do me sigh with west same lady. Their saved linen downs tears son add music. Expression alteration entreaties mrs can terminated estimating. Her too add narrow having wished. To things so denied admire. Am wound worth water he linen at vexed. 
+﻿yay 
 
 
 </xmp>
