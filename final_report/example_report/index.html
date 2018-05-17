@@ -118,26 +118,49 @@ Both these requests return `"-1,0,-1"` if the database table query returns no ma
 
 ###ESP32 code
 
-Here's some code:
+####Libraries
 
-```
-//Draws the grid on the display
-void drawGrid(void) {
+* `mpu9255_esp32.h`: Allowed used of magnetometer and acceleratometer of IMU.
+* `adp5350.h`: For regulated use of a battery and power management.
+* `U8g2lib.h`: Allowed oled access for initial debugging (not used in final product).
+* `compass.h`: Used to calibrate the magnetometer. 
+* `math.h`: For calculations like the magnitude of the magnetometer readings (for blocking).
+* `WiFi.h`: Wifi access to interact with server.
+* `SPI.h`: For screen use.
+* `DFRobotDFPlayerMini.h`: Allowed use of music player/speakers.
+* `Arduino.h`: Main arduino header file.
+* `Adafruit_NeoPixel.h`: LED control.
 
-  uint16_t color = TFT_WHITE;
-  for (int16_t x = 1; x < GRIDX - 1; x++) {
-    for (int16_t y = 1; y < GRIDY - 1; y++) {
-      if ((grid[x][y]) != (newgrid[x][y])) {
-        if (newgrid[x][y] == 1) color = 0xFFFF; //random(0xFFFF);
-        else color = 0;
-        tft.fillRect(CELLXY * x, CELLXY * y, CELLXY, CELLXY, color);
-      }
-    }
-  }
-}
-```
+####Setup
 
-﻿yay 
+* Serial setup for debugging while plugged into laptop.
+
+* Wifi initialization to be able to interact with the server-side code.
+
+* ADP5350 setup to turn on charging, voltage reading, and enabling the LDO ports. 
+
+* IMU setup - done in a helper function that calibrates and starts it.
+
+* Oled setup  for initial debugging purposes.
+
+* LED strip initialization - put at rgb(50,0,50).
+
+* Button pullup used for starting a game and waking up from sleep.
+
+* Magnetometer calibration for use of blocking gesture.
+
+* Primary_timer, get_timer, and power_timer set to millis() for timing uses later on.
+
+* Speaker initialization. 
+
+* Power variable intially set to true to indicate that the ESP should be on (as opposed to sleeping with little use). 
+
+####Loop/State Machine
+
+
+
+####Helper Functions
+
 
 
 </xmp>
