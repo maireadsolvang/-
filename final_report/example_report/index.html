@@ -165,7 +165,9 @@ Both these requests return `"-1,0,-1"` if the database table query returns no ma
 There are four switch states that control the entire game.
 
 * Case `GAME_RESTING`: In this state, the board is waiting for a game to begin. In case it is reentering this state after just finishing a game, it resets the global game variables game_ID, health, data_timer, and game_state. If the button is pressed, it does `do_POST(7)` (see helper function documentation for this) and causes the next loop to go to `WAITING_TO_START`.
+
 * Case `WAITING_TO_START`: In this state, the player is trying to start a game with the other person. To know if the other person has also pressed the button to try to start a game, it continuously does `do_GET(1)` (see helper function documentation) until the button is no longer pressed, in which case it returns to `GAME_RESTING` because the player has given up on trying to start a game, or if the global variable `game_state` has been changed to 1, which means in game, it will go to `IN_GAME`. This variable is changed by the server information coming back from the constant GET request. If the other player has also posted that they are trying to start a game, and if both of them get the game_state as 1 infromation back form the server, that is when they both go into `IN_GAME`.
+
 * Case `IN_GAME`: There are several things that happen while both players are in game. First, it is checked if the variable `get_timer` has reached the `get_thres`. If it has, it does `do_GET(8)`, which checks the progress of the game from the server in terms of their own health, the state of the game, and the game id. This is useful when the other person has attacked but this player has not done a move in a while. Without this GET request, the player would never know they have lost points until they make a move themselves. 
 
   Next, `gesture_stuff()` (see helper function documentation) is called, which updates the global variable current_action. This variable is what move the player is currently making. This can be 'Slash', 'Push', 'Block', or None. Depending on what move the person has made, it goes into a certain if statement. Before this, though, `has_happened(current_action)` checks whether `current_action` has just been posted or if this is a new move. Without this check, one slash move would post a slash to the server multiple times. However, blocking moves do post to the server continuously, since the server has to know if a player is currently blocking while a counter-move is made. 
@@ -178,6 +180,46 @@ There are four switch states that control the entire game.
 
 
 ####Helper Functions
+
+* `printDetail(uint8_t type, int value)`: This is an MP3 helper function that allows for diagnosis of what is going on with the module.
+
+* `setup_imu()`: Initializes, calibrates, and starts the IMU module for use with the accelerometer (for slashing and pushing) and magnetometer (for blocking).
+
+* `record_IMU_data()`: Reads the acceleromter data from the IMU and then sets the global variable `sum` to the root of its squares. The global variable `data` is also appended with the x, y, and z values for the correlation database. 
+
+* `magnetometer()`: Reads the magnetometer data from the IMU. It then calculates the magnitude of the x, y, and z values and compares it to a threshold. If the magnitude is greater than the threshold, the function returns true. This means that a blocking motion is being made and is used by the gesture functions. Otherwise, returns false. 
+
+* `speaker_begin()`: Initializes the MP3 player.
+
+* `do_POST(int action)`: This does a POST request to the server with the location /608dev/sandbox/smathew/final_project/server.py. It sends the values of action, player_ID, and game_ID. The action value is passed in, and it is the current action that is being made by the player. This is called in the loop when in game and a gesture has been determined to have been made. The action can be slash (2), push (3), or block (4). The player_ID is a string identifying the user. The game_ID starts as -1, but when it first starts a game, this is changed to a value given by the server to both players. This function is also called when starting a game with the `action` of 7. This means that the player has pressed the button and is waiting to start a game. 
+
+  The server sends back three values: health, game_state, and game_ID. `health` is the current health of the player. `game_state` is either 0 for not in game, 1 for in game, or 2 for game over. `game_ID` starts at -1 but is assigned a value by the server once in a game. These values are then parsed and set to the global variables with the helper function `parse_received(String op)`.
+
+* `do_GET(int act)`: This sends a GET request to the server in the same location as the POST request. It sends `act`, `player_ID`, and `game_ID`. `act` is either a 1 or an 8. When it is a 1, it is when the player is first trying to start a game and looking to see if the other person has also tried to start a game. An 8 means that the player is currently in a game and checking what their own health is (in case the other player made a move while they weren't doing anything). The GET request receives back the same three values as the POST and parses them in the same manner. 
+
+* `oled_print(String message)`: Was used to print text to the oled when used for debugging. 
+
+* `wifi_setup()`: Connects to the wifi.
+
+* `parse_received(String op)`: Takes the data coming back from the POST and GET requests. Information from the server comes back as a string in the form of #,#,#. This parsed based on comma location and sets the global variable `health` to the first number, `game_state' to the second, and `game_ID` to the third. 
+
+* `print_wakeup_reason()`: Used for when the ESP32 is set to sleep from inactivity. It prints the wakeup reason to Serial.
+
+* `update_current_act()`: MURD
+
+* `update_list(float running_vals[avg_ges_len], float val)`: MURD
+
+* `update_charged()`: MURD
+
+* `cross_corr(float &corr_val, float running_vals[avg_ges_len], float corr_vals[avg_ges_len])`: MURD
+
+* `set_corr_vals(float &corr_x, float &corr_y, float &corr_z, float &corr_val, float gesture_xs[avg_ges_len], float gesture_ys[avg_ges_len], float gesture_zs[avg_ges_len])`: MURD
+
+* `gesture_stuff()`: MURD
+
+* `has_happened(String action)`: MURD
+
+* `update_leds(uint32_t c)`: MURD
 
 
 
