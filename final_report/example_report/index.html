@@ -69,8 +69,12 @@ Depending on the value of `action`, which indicates the action that the user jus
 
 If the request was a POST request and the value of `action` was:
 
-* 2, 3, or 4, the action was a slash, push, or block, respectively.
-The section of the code handling these cases will call the helper function `add_action`, which updates gestures_table with this new action.
+* 2, 3, or 4, the action was a slash, push, or block, respectively.<br/><br/>
+The section of the code handling these cases will call the helper function `add_action(game_ID, player_ID, action)`, which updates `gestures_table` with this new action.(Helper functions are described in more detail later.)
+
+The data from the `game_table` corresponding to the current game is then extracted using the helper function `extract_game_info(game_ID)`.
+
+If this game is not ongoing (its `game_state` is not `1`), the health of the player who made the POST request, `game_state`, and `game_ID` is returned as a string. 
 
 * Explore the websockets capabilities of the ESP32 more
 * Work within the Intel/Altera toolchain more
