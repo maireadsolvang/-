@@ -62,6 +62,26 @@ Insert description here.
 
 ####Design Challenges and Rationale for Decisions
 
+#####IR Sensors/Receivers
+
+Initially, we were going to use IR sensors and receivers in order to start the game (instead of buttons). One player would hit a button to emmit an IR signal, and when the other person picked up this signal, the gaem woudl start. First, our problem was that the sensors and receivers we had were 2-pronged, and they basically picked up any light from a window, triggering it, which was not ideal. When we got the 3-prong sensors and receivers, we got them to work, but the distance on them was not very large (about two feet). Also, we found out that the IR code and the LED strip code interact badly (as outlined by the LED documentation) - SHNA LINK PICTURE HERE. To simplify things and allow everything to work more smoothly, and to allow players to be further apart when starting a game, we moved to just buttons being pressed allowing the game to start. 
+
+#####Speakers with Batteries
+
+The speakers can take up to 5V, and we found out that when the batteries are not very charged, the speaker is not able to play music. This can be easily resolved by having charged batteries, we did not realize until pretty far into our project that you have to enable the ADP to charge your batteries. Once this was realized, we started charging them more effectively. 
+
+#####Blocking Code
+
+The gesture recognition code is highly dependent on the loop running at a certain rate. We found that gestures started not being recognized when certain blocking code was put on. One example of this was the LED update code. Each loop, the LEDs are updated with the number of hearts corresponding to health. The LEDs usually have a `delay(50)` after setting each LED in order to have enough time for all of the information to be processed and passed on to the next LED. Unfortunately, this delay affected the gesture data and made it not very accurate. We decided to get rid of the delay to allow the gesture recognition to work, but that is why some of our LEDs randomly flash different colors. Another example of this happening was when we tried to have a GET request every loop while in game in order to update the player's health. This also made the loop too slow for the gesture recognition. To fix this, we had it only do a GET request every certain amount of time. 
+
+#####Counterfeit MP3 Players
+
+We had a lot of trouble with our MP3 players because it turned out that the ones we were trying to use were mostly conterfeit ones. This caused many of them to not work, and we had to keep switching them out to figure out which ones did. Fortunately, we ended up getting two that did function. We also accidentally fried one good one along the way because it turned out we had not put in voltage regulating code for the ADP yet. Once that was put in, we did not have any more overheating/frying problems. 
+
+#####Health Not Updating
+
+We found that when one person did not make a move for a time while the other person was still attacking them, even if they died they were not aware that they had until they tried making another move. We realized that the global variable `health` does not update unless you do a POST or GET request, and while in game, that was only happening when a move was made. We then added `do_GET(8)`, which is called every certain amount of time and updates all of the player's variables. This way a player can not do anything and still know that they are dying. 
+
 ####Parts List
 
 ####Energy Management
