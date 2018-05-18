@@ -3,11 +3,6 @@
 <title>Sakana Milk Battles: The Game</title>
 
 <xmp theme="united" style="display:none;">
-# Overview
-
-This entire page is written using [markdown](https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet), which let's you generate cleaner-documents that can be readily rendered in a lot of environments (including the web).  In the context of this template, the markdown is interpretted by a javascript library for you found <a href="http://strapdownjs.com/" target="_blank">here</a>.  This library also let's you pretty conveniently change the theme to one of about a dozen options (See the link). You can also always fall back on traditional html <a href="https://en.wikipedia.org/wiki/Markdown" target="_blank">as I am doing in this link and the previous one</a>.  Feel free to ask questions on piazza, but hopefully this document provides a good list of examples of how to do most things.  
-
-You do not have to use this template. All we want is a nice, clean web-friend report so you can do it in one page as shown here, or in multiple linked pages. However you'd like.  
 
 ## Overall Design
 
@@ -91,12 +86,12 @@ Your browser does not support the video tag.
 	<img src="./media/systemblockdiagram.jpg" width="600"/>
 </center>
 
-Insert description here.
+There are three main states to our system state machine (the fourth one is only used when updating the gesture database for correlation). The first is GAME_RESTING, when no game has started for the player yet. The variable game_state is initialized at 0. If a button is pressed, it will move to WAITING_TO_START. While here, it continually does a GET request to see if someone else is trying to start a game. If they never receive this information and stop holding the button, they return to GAME_RESTING. If they do find out someone is trying to play a game with them, game_state is updated to 1 from the server, and it moved into IN_GAME. Here it remains and does both GET and POST requests with the server, each time updating health and game_state. When the game_state is returned back as 2, meaning the game is over, the player returns to GAME_RESTING, where its variables are re-initialized, and it waits to start a new game. 
 
 ####State machine block diagram:
 
 <center>
-	<img src="./media/schematic_1.png" width="600"/>
+	<img src="./media/state_machine_block_diagram.jpg.png" width="600"/>
 </center>
 
 Insert description here.
@@ -138,6 +133,10 @@ Franklin
 	<img src="./media/energy_diagram.png" width="600"/>
 </center>
 The glove draws power through the ESP32, IMU, linear regulators, LED array, and speaker system, with the LEDs and ESP32 consuming an overwhelming amount of energy. The active use of these two energy intensive components are during the games, where there is frequent communication with the server and use of LEDs to display health levels. If the glove were to always be in this energy intensive state, the battery would run out of power in less than an hour! To save power, we can capatalize on the fact that for the majority of the time the glove will not be in a game, and being in this high energy intensive state is not necessary. The acceleration readings of the IMU are also used to determine when the glove is not being used. When there little movement detected by the IMU for specific time duration, which was set to a minute, the LED arrays will be powered off, and the ESP32 will enter a light sleep state. This state can be recognized because it is the only time when the LEDs are off, except when the battery is unplugged. The button can be pressed to wake up the ESP32, which will turn on the LEDs and allow the user to resume the game they were in, or begin a new one. In this low energy sleep state, the glove can stay powered for over five hours! These are huge energy savings.
+
+#### Gesture Correlation
+
+In order to implement gesture recognition, we first collected a database of test gestures and then created a set correlation list in order to compare the current accel values to the set list. In order to collect the database we used the folder labeled data_collection on github which has a server side file that creates a database to store the list of gestures and an arduino file that allows the user to record a gesture by holding down a button to signify when the gesture is happening and then another button to confirm is was a valid gesture to post to the database. Once the database was populated the server side code Correlation.py found in the correlation_proof folder was used to generate a set correlation list. The code takes all the gesture information from the database, finds the average length of a gesture and then uses linear interpolation to transform each gesture list to have the same length. It was then easy to create a correlation list for each gesture by averaging the values for each list index. Since, the IMU collects information from three dimensions (x, y, and z) each gesture actually has three corresponding correlation lists. With the correlation lists made, the next step was to set thresholds to see how closely the current accel values matched the set correlation lists. This was done by performing gestures in real time with the cross correlation values printing to the Serial Plotter to see what reasonable cuttoffs would be for each gesture. The folder Print_ges has code that works solely with the gestures in order to set threshold values and test gestures independently. 
 
 
 ## Documentation of code
@@ -191,6 +190,8 @@ Both these requests return `"-1,0,-1"` if the database table query returns no ma
 
 
 ###ESP32 code
+	
+ESP32 code takes input from the player, figures out what gestures the player is trying to make, and then sends that information to the server. It then receives back information about the game and uses that to interact more with the player.
 
 ####Libraries
 
