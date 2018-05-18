@@ -91,7 +91,7 @@ There are three main states to our system state machine (the fourth one is only 
 ####State machine block diagram:
 
 <center>
-	<img src="./media/state_machine_block_diagram.jpg.png" width="600"/>
+	<img src="./media/state_machine_block_diagram.jpg" width="600"/>
 </center>
 
 Insert description here.
@@ -130,7 +130,7 @@ We found that when one person did not make a move for a time while the other per
 
 Franklin
 <center>
-	<img src="./media/energy_diagram.png" width="600"/>
+	<img src="./media/energy_diagram.jpg" width="600"/>
 </center>
 The glove draws power through the ESP32, IMU, linear regulators, LED array, and speaker system, with the LEDs and ESP32 consuming an overwhelming amount of energy. The active use of these two energy intensive components are during the games, where there is frequent communication with the server and use of LEDs to display health levels. If the glove were to always be in this energy intensive state, the battery would run out of power in less than an hour! To save power, we can capatalize on the fact that for the majority of the time the glove will not be in a game, and being in this high energy intensive state is not necessary. The acceleration readings of the IMU are also used to determine when the glove is not being used. When there little movement detected by the IMU for specific time duration, which was set to a minute, the LED arrays will be powered off, and the ESP32 will enter a light sleep state. This state can be recognized because it is the only time when the LEDs are off, except when the battery is unplugged. The button can be pressed to wake up the ESP32, which will turn on the LEDs and allow the user to resume the game they were in, or begin a new one. In this low energy sleep state, the glove can stay powered for over five hours! These are huge energy savings.
 
