@@ -4,23 +4,15 @@
 
 <xmp theme="united" style="display:none;">
 
+# Overview
+
+Inspired by pop culture’s Iron Man, Dragon Ball Z, and all two player melees, we aspire to create an interactive two-player fighting game where you can actually act out fighting moves and gain points. After signaling for a game to begin, they can begin to battle it out!   
+
 ## Overall Design
 
-Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore
-et dolore magna aliqua.  Random Words.  Random Words. This is America. This is America. Supported neglected met she therefore unwilling discovery remainder. Way sentiments two indulgence uncommonly own. Diminution to frequently sentiments he connection continuing indulgence. An my exquisite conveying up defective. Shameless see the tolerably how continued. She enable men twenty elinor points appear. Whose merry ten yet was men seven ought balls. 
+Each player will be wearing a glove that has an ESP32 microcontroller embedded into it along with an IMU, MP3 player, LEDs, a button, and an ADP. When the two push buttons to signal a game to start, epic music will sing out of the speakers on the gloves to signal that the battle has begun. Following this, each player can make certain pre-designated fighting moves in order to try to score points on the other person. The lower-powered "slash" is a swimping motion that takes one health from the other person, shown on their LED health hearts. A stronger charged attack takes a moment to power up, but it can take two healths away. LEDs along the glove light up as the player holds their hand in the charging position, but they must beware because they are open to attack from the other player! Once the green light shines that it is charged, though, they can fire at the other player. Hopefully their opponent puts up the blocking motion, or they are in for a sorry surprise.
 
-Image example:
-
-<center>
-	<img src="./media/glove.jpg" width="480"/>
-</center>
-
-Both rest of know draw fond post as. It agreement defective to excellent. Feebly do engage of narrow. Extensive repulsive belonging depending if promotion be zealously as. Preference inquietude ask now are dispatched led appearance. Small meant in so doubt hopes. Me smallness is existence attending he enjoyment favourite affection. Delivered is to ye belonging enjoyment preferred. Astonished and acceptance men two discretion. Law education recommend did objection how old. 
-
-Built purse maids cease her ham new seven among and. Pulled coming wooded tended it answer remain me be. So landlord by we unlocked sensible it. Fat cannot use denied excuse son law. Wisdom happen suffer common the appear ham beauty her had. Or belonging zealously existence as by resources. 
-
-Abilities or he perfectly pretended so strangers be exquisite. Oh to another chamber pleased imagine do in. Went me rank at last loud shot an draw. Excellent so to no sincerity smallness. Removal request delight if on he we. Unaffected in we by apartments astonished to decisively themselves. Offended ten old consider speaking. 
-
+Throughout the battle, sound effects come out of the glove microphones when moves are made, and eventually when enough points are racked up by one player, the glove announces the winner. These sound effects allow the players to know what is happening digitally through the battle since they are not actually hitting or throwing things at one another. Through imagination, sound effects, and awesome fighting moves, Sakan Milk Battles: The Game is a great time for all to play.
 
 
 ## Example Battle
@@ -86,15 +78,15 @@ Your browser does not support the video tag.
 	<img src="./media/systemblockdiagram.jpg" width="600"/>
 </center>
 
-There are three main states to our system state machine (the fourth one is only used when updating the gesture database for correlation). The first is GAME_RESTING, when no game has started for the player yet. The variable game_state is initialized at 0. If a button is pressed, it will move to WAITING_TO_START. While here, it continually does a GET request to see if someone else is trying to start a game. If they never receive this information and stop holding the button, they return to GAME_RESTING. If they do find out someone is trying to play a game with them, game_state is updated to 1 from the server, and it moved into IN_GAME. Here it remains and does both GET and POST requests with the server, each time updating health and game_state. When the game_state is returned back as 2, meaning the game is over, the player returns to GAME_RESTING, where its variables are re-initialized, and it waits to start a new game. 
-
+Insert description here.
+	
 ####State machine block diagram:
 
 <center>
 	<img src="./media/state_machine_block_diagram.jpg" width="600"/>
 </center>
 
-Insert description here.
+There are three main states to our system state machine (the fourth one is only used when updating the gesture database for correlation). The first is GAME_RESTING, when no game has started for the player yet. The variable game_state is initialized at 0. If a button is pressed, it will move to WAITING_TO_START. While here, it continually does a GET request to see if someone else is trying to start a game. If they never receive this information and stop holding the button, they return to GAME_RESTING. If they do find out someone is trying to play a game with them, game_state is updated to 1 from the server, and it moved into IN_GAME. Here it remains and does both GET and POST requests with the server, each time updating health and game_state. When the game_state is returned back as 2, meaning the game is over, the player returns to GAME_RESTING, where its variables are re-initialized, and it waits to start a new game. 
 
 ####Design Challenges and Rationale for Decisions
 
