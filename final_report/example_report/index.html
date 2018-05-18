@@ -78,6 +78,7 @@ Your browser does not support the video tag.
 	<img src="./media/systemblockdiagram.jpg" width="600"/>
 </center>
 
+There are several components that are wired up to the ESP32 in our system. The IMU is connected to pins 21 and 22, 3.3V power, and ground. The neopixels are connected to 3.3V power, ground, and pin 19 for signal. The button is connected to ground and input pin 15. The MP3 player is powered by 5V, is connected to ground and the TX/RX pins of the ESP32, and allows a speaker to hook up to it. The ADP connects to the power/ground rails that the ESP is connected to, as well as pins 21 and 22. Together all of these components interact in just the right way to allow our game to play!
 
 ####State machine block diagram:
 
