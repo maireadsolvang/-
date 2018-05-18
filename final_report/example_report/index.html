@@ -62,33 +62,7 @@ Insert description here.
 
 ####Design Challenges and Rationale for Decisions
 
-#####IR Sensors/Receivers
-
-Initially, we were going to use IR sensors and receivers in order to start the game (instead of buttons). One player would hit a button to emmit an IR signal, and when the other person picked up this signal, the gaem woudl start. First, our problem was that the sensors and receivers we had were 2-pronged, and they basically picked up any light from a window, triggering it, which was not ideal. When we got the 3-prong sensors and receivers, we got them to work, but the distance on them was not very large (about two feet). Also, we found out that the IR code and the LED strip code interact badly (as outlined by the LED documentation) - SHNA LINK PICTURE HERE. To simplify things and allow everything to work more smoothly, and to allow players to be further apart when starting a game, we moved to just buttons being pressed allowing the game to start. 
-
-#####Speakers with Batteries
-
-The speakers can take up to 5V, and we found out that when the batteries are not very charged, the speaker is not able to play music. This can be easily resolved by having charged batteries, we did not realize until pretty far into our project that you have to enable the ADP to charge your batteries. Once this was realized, we started charging them more effectively. 
-
-#####Blocking Code
-
-The gesture recognition code is highly dependent on the loop running at a certain rate. We found that gestures started not being recognized when certain blocking code was put on. One example of this was the LED update code. Each loop, the LEDs are updated with the number of hearts corresponding to health. The LEDs usually have a `delay(50)` after setting each LED in order to have enough time for all of the information to be processed and passed on to the next LED. Unfortunately, this delay affected the gesture data and made it not very accurate. We decided to get rid of the delay to allow the gesture recognition to work, but that is why some of our LEDs randomly flash different colors. Another example of this happening was when we tried to have a GET request every loop while in game in order to update the player's health. This also made the loop too slow for the gesture recognition. To fix this, we had it only do a GET request every certain amount of time. 
-
-#####Counterfeit MP3 Players
-
-We had a lot of trouble with our MP3 players because it turned out that the ones we were trying to use were mostly conterfeit ones. This caused many of them to not work, and we had to keep switching them out to figure out which ones did. Fortunately, we ended up getting two that did function. We also accidentally fried one good one along the way because it turned out we had not put in voltage regulating code for the ADP yet. Once that was put in, we did not have any more overheating/frying problems. 
-
-#####Health Not Updating
-
-We found that when one person did not make a move for a time while the other person was still attacking them, even if they died they were not aware that they had until they tried making another move. We realized that the global variable `health` does not update unless you do a POST or GET request, and while in game, that was only happening when a move was made. We then added `do_GET(8)`, which is called every certain amount of time and updates all of the player's variables. This way a player can not do anything and still know that they are dying. 
-
 ####Parts List
-
-* DFRobotDFPlayerMini: This part was on each glove, and along with a speaker, allowed sound effects to be played based on the state of the game. 
-
-* Adafruit_NeoPixel led strip: This part was also on each glove. It shows the number of lives each player had in red, when the player is charging in flashing green, when not in game in blue, when calibrating in purple, and when sleeping off. 
-
-* 3D printed glove device: We 3D printed a case for the ESP32 board mounted on a metal strap that goes around the player's hand. 
 
 ####Energy Management
 
@@ -234,21 +208,21 @@ There are four switch states that control the entire game.
 
 * `print_wakeup_reason()`: Used for when the ESP32 is set to sleep from inactivity. It prints the wakeup reason to Serial.
 
-* `update_current_act()`: MURD
+* `update_current_act()`: Checks the current correlation values stored in the global correlation variables (corr_val2_x, corr_val2_y, corr_val2_z, corr_val3_x, corr_val3_y, corr_val3_z) and compares them the correlation thresholds needed to classify the movement as a valid action to set current_action.
 
-* `update_list(float running_vals[avg_ges_len], float val)`: MURD
+* `update_list(float running_vals[avg_ges_len], float val)`: Helper function used to update the list of running x, y, and z values given by the accelerometer. 
 
-* `update_charged()`: MURD
+* `update_charged()`: Updates the global variable charged based on the list running_charges. Used so charging doesn't have to be constant in case noise unclassifies the current_action from charging briefly. 
 
-* `cross_corr(float &corr_val, float running_vals[avg_ges_len], float corr_vals[avg_ges_len])`: MURD
+* `cross_corr(float &corr_val, float running_vals[avg_ges_len], float corr_vals[avg_ges_len])`: Cross correlates the current acceleration values in one dimension against the set correlation values collected from testing.
 
-* `set_corr_vals(float &corr_x, float &corr_y, float &corr_z, float &corr_val, float gesture_xs[avg_ges_len], float gesture_ys[avg_ges_len], float gesture_zs[avg_ges_len])`: MURD
+* `set_corr_vals(float &corr_x, float &corr_y, float &corr_z, float &corr_val, float gesture_xs[avg_ges_len], float gesture_ys[avg_ges_len], float gesture_zs[avg_ges_len])`: Helper function that cross correlates in all three dimensions using the cross_corr function repeatly.
 
-* `gesture_stuff()`: MURD
+* `gesture_stuff()`: Executes all the gesture functions needed to keep all global variables associated with gestures updated such as current_action and accelormeter values. Included as a seperate function to make the loop code more easily readable.
 
-* `has_happened(String action)`: MURD
+* `has_happened(String action)`: Tests to see if the current action has happened in a set period of time. Used to prevent multiple POST requests due to several valid correlation readings from a single physical action.
 
-* `update_leds(uint32_t c)`: MURD
+* `update_leds(uint32_t c)`: Updates the LEDs depending on the current scenario. Provides different colors for calibrating, game waiting to start, health, and charging. The variable c is used to specify color if the strip is fully lit (not for health & charging).
 
 
 
