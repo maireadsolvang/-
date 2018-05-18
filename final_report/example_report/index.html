@@ -88,6 +88,7 @@ There are several components that are wired up to the ESP32 in our system. The I
 
 There are three main states to our system state machine (the fourth one is only used when updating the gesture database for correlation). The first is GAME_RESTING, when no game has started for the player yet. The variable game_state is initialized at 0. If a button is pressed, it will move to WAITING_TO_START. While here, it continually does a GET request to see if someone else is trying to start a game. If they never receive this information and stop holding the button, they return to GAME_RESTING. If they do find out someone is trying to play a game with them, game_state is updated to 1 from the server, and it moved into IN_GAME. Here it remains and does both GET and POST requests with the server, each time updating health and game_state. When the game_state is returned back as 2, meaning the game is over, the player returns to GAME_RESTING, where its variables are re-initialized, and it waits to start a new game. 
 
+
 ####Design Challenges and Rationale for Decisions
 
 #####IR Sensors/Receivers
@@ -117,6 +118,16 @@ We found that when one person did not make a move for a time while the other per
 * Adafruit_NeoPixel led strip: This part was also on each glove. It shows the number of lives each player had in red, when the player is charging in flashing green, when not in game in blue, when calibrating in purple, and when sleeping off. 
 
 * 3D printed glove device: We 3D printed a case for the ESP32 board mounted on a metal strap that goes around the player's hand. 
+
+####Physical Glove Assembly
+<center>
+	<img src="./media/Glove_CAD_Assem_Front.jpg" width="600"/>
+</center>
+To package the glove into a nicer, more aesthetic product and to add a layer of physical protection, a glove case was designed to house all the electronics. The housing for the electronics was designed on SolidWorks and 3D printed. Using sheet metal, a handle was created that attaches to the case and also allows the using to slide the glove assembly into his or her hands. There is a housing for the speaker and holes that allow the user to see the health LEDs. In future iterations of the assembly, an access hole would be added to allow easy plug in of the programming cord. Below is a picture of the assembly with the electronics on the inside.
+<center>
+	<img src="./media/Glove_CASE.jpg" width="600"/>
+</center>
+
 
 ####Energy Management
 
