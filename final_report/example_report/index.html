@@ -91,7 +91,7 @@ Your browser does not support the video tag.
 	<img src="./media/systemblockdiagram.jpg" width="600"/>
 </center>
 
-Insert description here.
+There are three main states to our system state machine (the fourth one is only used when updating the gesture database for correlation). The first is GAME_RESTING, when no game has started for the player yet. The variable game_state is initialized at 0. If a button is pressed, it will move to WAITING_TO_START. While here, it continually does a GET request to see if someone else is trying to start a game. If they never receive this information and stop holding the button, they return to GAME_RESTING. If they do find out someone is trying to play a game with them, game_state is updated to 1 from the server, and it moved into IN_GAME. Here it remains and does both GET and POST requests with the server, each time updating health and game_state. When the game_state is returned back as 2, meaning the game is over, the player returns to GAME_RESTING, where its variables are re-initialized, and it waits to start a new game. 
 
 ####State machine block diagram:
 
