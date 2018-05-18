@@ -20,7 +20,6 @@ Throughout the battle, sound effects come out of the glove microphones when move
 <center>
 	<video width="500" height="400" controls>
   <source src="./media/game.mp4" type="video/mp4" >
-Your browser does not support the video tag.
 </video>
 </center>
 
@@ -80,10 +79,17 @@ Your browser does not support the video tag.
 
 There are several components that are wired up to the ESP32 in our system. The IMU is connected to pins 21 and 22, 3.3V power, and ground. The neopixels are connected to 3.3V power, ground, and pin 19 for signal. The button is connected to ground and input pin 15. The MP3 player is powered by 5V, is connected to ground and the TX/RX pins of the ESP32, and allows a speaker to hook up to it. The ADP connects to the power/ground rails that the ESP is connected to, as well as pins 21 and 22. Together all of these components interact in just the right way to allow our game to play!
 
-####State machine block diagram:
+####State machine block diagrams
 
 <center>
-	<img src="./media/state_machine_block_diagram.jpg" width="600"/>
+	<img src="./media/server-game-start.jpg" width="400"/>
+	<img src="./media/server-game.jpg" width="400"/>
+</center>
+
+#####Server-side State machine
+
+<center>
+	<img src="./media/esp-state-machine.jpg" width="500"/>
 </center>
 
 There are three main states to our system state machine (the fourth one is only used when updating the gesture database for correlation). The first is GAME_RESTING, when no game has started for the player yet. The variable game_state is initialized at 0. If a button is pressed, it will move to WAITING_TO_START. While here, it continually does a GET request to see if someone else is trying to start a game. If they never receive this information and stop holding the button, they return to GAME_RESTING. If they do find out someone is trying to play a game with them, game_state is updated to 1 from the server, and it moved into IN_GAME. Here it remains and does both GET and POST requests with the server, each time updating health and game_state. When the game_state is returned back as 2, meaning the game is over, the player returns to GAME_RESTING, where its variables are re-initialized, and it waits to start a new game. 
@@ -298,6 +304,9 @@ There are four switch states that control the entire game.
 
 * `update_leds(uint32_t c)`: Updates the LEDs depending on the current scenario. Provides different colors for calibrating, game waiting to start, health, and charging. The variable c is used to specify color if the strip is fully lit (not for health & charging).
 
+##Future Work
+
+In the future, we would like a hole built into the side of the glove so that we can plug into the computer without taking the cover off. Also, we would like to implement more/different gestures. Furthermore, we would like to be able to search through the gesture database for a specific username so that that person's gesture values are suited specifically for them. In other words, the gesture correlation would only be looking at their own previous data, so the gesture recognition will be more accurate because the data will fit that person's movements very precisely. 
 
 
 </xmp>
